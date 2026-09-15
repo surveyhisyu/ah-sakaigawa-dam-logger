@@ -1,4 +1,5 @@
 import os
+import time
 from datetime import datetime, timezone, timedelta
 from io import StringIO
 
@@ -13,6 +14,7 @@ JST = timezone(timedelta(hours=9))
 BASE_URL = "https://kawa.pref.toyama.jp/camera/data/"
 TARGET_DAM_CODE = "90013"
 DATA_DIR = "data"
+TARGET_MINUTE = 8  # 毎時何分に取得を合わせるか
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -96,7 +98,32 @@ def append_to_daily_csv(df: pd.DataFrame) -> None:
     print(f"保存しました: {filename} ({len(df)}行)")
 
 
+def wait_until_target_minute() -> None:
+    """JSTの時計がTARGET_MINUTEになるまで待機する。
+
+    GitHub Actionsのスケジュール実行は、指定した時刻ちょうどに
+    始まる保証がなく、混雑状況によっては数分〜数十分ずれることがある。
+    ワークフロー自体は早め(バッファを持たせた時刻)に起動しておき、
+    ここで本当にTARGET_MINUTEになるまで待つことで、取得日時と
+    サイト側の更新タイミングを毎回なるべく揃える。
+    """
+    now = datetime.now(JST)
+    target = now.replace(minute=TARGET_MINUTE, second=0, microsecond=0)
+
+    if now >= target:
+        # すでにTARGET_MINUTEを過ぎている場合は待たずに即取得する
+        # (遅延しすぎてこれ以上待つとデータが古くなるため)
+        print(f"すでに{TARGET_MINUTE}分を過ぎているため、待たずに取得します")
+        return
+
+    wait_seconds = (target - now).total_seconds()
+    print(f"{TARGET_MINUTE}分になるまで {wait_seconds:.0f}秒 待機します")
+    time.sleep(wait_seconds)
+
+
 def main() -> None:
+    wait_until_target_minute()
+
     now_jst = datetime.now(JST)
     print(f"データ取得開始: {now_jst.strftime('%Y-%m-%d %H:%M:%S')} (JST)")
 
