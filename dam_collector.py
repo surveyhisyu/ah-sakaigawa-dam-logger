@@ -54,6 +54,9 @@ def fetch_dam_csv() -> pd.DataFrame:
     if len(names) < len(df.columns):
         names += [f"不明列{i}" for i in range(len(df.columns) - len(names))]
     df.columns = names
+
+    # 「予備」列は境川ダムでは使われていない(-99.9固定)ため出力から除外する
+    df = df.drop(columns=["予備"], errors="ignore")
     return df
 
 
