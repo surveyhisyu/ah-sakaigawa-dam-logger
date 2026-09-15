@@ -2,7 +2,7 @@ name: 境川ダムデータ自動収集
 
 on:
   schedule:
-    - cron: "8 * * * *"
+    - cron: "3 * * * *"
   workflow_dispatch:
 
 permissions:
