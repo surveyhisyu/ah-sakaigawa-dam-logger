@@ -1,0 +1,33 @@
+name: 境川ダムデータ自動収集
+
+on:
+  schedule:
+    - cron: "8 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: ライブラリのインストール
+        run: pip install -r requirements.txt
+
+      - name: データ収集
+        run: python dam_collector.py
+
+      - name: データをコミット
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "データ自動収集: $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push
