@@ -80,12 +80,26 @@ def append_to_daily_csv(df: pd.DataFrame) -> None:
     os.makedirs(DATA_DIR, exist_ok=True)
 
     now_jst = datetime.now(JST)
-    df = df.copy()
-    df.insert(0, "取得日時", now_jst.strftime("%Y-%m-%d %H:%M:%S"))
-
     filename = os.path.join(
         DATA_DIR, f"dam_data_{TARGET_DAM_CODE}_{now_jst.strftime('%Y%m%d')}.csv"
     )
+    file_exists = os.path.exists(filename)
+
+    df.to_csv(
+        filename,
+        mode="a" if file_exists else "w",
+        header=not file_exists,
+        index=False,
+        encoding="utf-8-sig",
+    )
+    print(f"保存しました: {filename} ({len(df)}行)")
+
+
+def append_to_all_csv(df: pd.DataFrame) -> None:
+    """全期間分をまとめて1ファイルに追記保存する(data/dam_data_90013_all.csv)"""
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+    filename = os.path.join(DATA_DIR, f"dam_data_{TARGET_DAM_CODE}_all.csv")
     file_exists = os.path.exists(filename)
 
     df.to_csv(
@@ -133,7 +147,13 @@ def main() -> None:
     target_df = filter_target_dam(df)
     print(f"ダムコード {TARGET_DAM_CODE} のデータ: {len(target_df)}行")
 
+    # 「取得日時」はここで1回だけ付与し、日次ファイル・全期間ファイルの
+    # 両方に同じ値を使う
+    target_df = target_df.copy()
+    target_df.insert(0, "取得日時", now_jst.strftime("%Y-%m-%d %H:%M:%S"))
+
     append_to_daily_csv(target_df)
+    append_to_all_csv(target_df)
     print("完了")
 
 
