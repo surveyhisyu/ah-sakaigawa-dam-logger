@@ -49,12 +49,20 @@ def main() -> None:
     combined = pd.concat(dfs, ignore_index=True)
 
     os.makedirs(WEEKLY_DIR, exist_ok=True)
+
+    # (1) 日付入りのアーカイブ用ファイル(過去分もすべて残る)
     out_filename = os.path.join(
         WEEKLY_DIR,
         f"dam_data_{TARGET_DAM_CODE}_{days[0].strftime('%Y%m%d')}-{days[-1].strftime('%Y%m%d')}.csv",
     )
     combined.to_csv(out_filename, index=False, encoding="utf-8-sig")
     print(f"保存しました: {out_filename} ({len(combined)}行)")
+
+    # (2) 常に同じファイル名で上書きする「最新週」用ファイル
+    # デスクネッツ等から固定URLでブックマークして毎週ダウンロードできるようにするため
+    latest_filename = os.path.join(WEEKLY_DIR, "latest.csv")
+    combined.to_csv(latest_filename, index=False, encoding="utf-8-sig")
+    print(f"最新週ファイルも更新しました: {latest_filename}")
 
 
 if __name__ == "__main__":
