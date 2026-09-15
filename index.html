@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>境川ダムデータ ダウンロード</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f7f8;
+    --panel: #ffffff;
+    --ink: #17303a;
+    --ink-soft: #4b636c;
+    --line: #d9e2e4;
+    --deep: #16414f;
+    --accent: #2f7d95;
+    --accent-soft: #e4eef0;
+    --ok: #2f6d4f;
+    --warn: #a24a2a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 520px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 40px 36px 32px;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--deep);
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+
+  .lede {
+    color: var(--ink-soft);
+    font-size: 14.5px;
+    margin: 0 0 28px;
+    max-width: 40ch;
+  }
+
+  .row {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field span {
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  input[type="date"] {
+    font: inherit;
+    font-size: 15px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  input[type="date"]:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .presets {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .presets button {
+    font: inherit;
+    font-size: 13px;
+    padding: 7px 12px;
+    border: 1px solid var(--line);
+    background: var(--accent-soft);
+    color: var(--deep);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+
+  .presets button:hover { border-color: var(--accent); }
+
+  .primary {
+    width: 100%;
+    font: inherit;
+    font-size: 15.5px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--deep);
+    border: none;
+    border-radius: 9px;
+    padding: 13px 16px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .primary:hover { background: var(--accent); }
+  .primary:disabled { background: #9fb3ba; cursor: progress; }
+
+  .status {
+    margin-top: 20px;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    min-height: 20px;
+  }
+
+  .status.ok { color: var(--ok); }
+  .status.warn { color: var(--warn); }
+
+  .log {
+    margin-top: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    max-height: 140px;
+    overflow-y: auto;
+    display: none;
+    white-space: pre-wrap;
+  }
+
+  .foot {
+    margin-top: 26px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+
+  .foot a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>境川ダムデータ</h1>
+  <p class="lede">開始日と終了日を選んで、その期間の観測データを1つのCSVにまとめてダウンロードします。</p>
+
+  <div class="row">
+    <label class="field">
+      <span>開始日</span>
+      <input type="date" id="startDate">
+    </label>
+    <label class="field">
+      <span>終了日</span>
+      <input type="date" id="endDate">
+    </label>
+  </div>
+
+  <div class="presets">
+    <button type="button" data-range="7">直近7日間</button>
+    <button type="button" data-range="lastweek">先週(月〜日)</button>
+    <button type="button" data-range="30">直近30日間</button>
+  </div>
+
+  <button class="primary" id="downloadBtn">この期間のデータをダウンロード</button>
+
+  <div class="status" id="status"></div>
+  <div class="log" id="log"></div>
+
+  <div class="foot">
+    データ取得元: <a href="https://github.com/surveyhisyu/ah-sakaigawa-dam-logger" target="_blank" rel="noopener">ah-sakaigawa-dam-logger</a>（境川ダム／ダムコード90013）
+  </div>
+</div>
+
+<script>
+const REPO_RAW_BASE = "https://raw.githubusercontent.com/surveyhisyu/ah-sakaigawa-dam-logger/main/data";
+const DAM_CODE = "90013";
+
+const startInput = document.getElementById("startDate");
+const endInput = document.getElementById("endDate");
+const statusEl = document.getElementById("status");
+const logEl = document.getElementById("log");
+const btn = document.getElementById("downloadBtn");
+
+function toDateStr(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function toCompact(dateStr) {
+  return dateStr.replaceAll("-", "");
+}
+
+// 初期値: 直近7日間
+(function setDefaultRange() {
+  const today = new Date();
+  const weekAgo = new Date();
+  weekAgo.setDate(today.getDate() - 6);
+  startInput.value = toDateStr(weekAgo);
+  endInput.value = toDateStr(today);
+})();
+
+document.querySelectorAll(".presets button").forEach((button) => {
+  button.addEventListener("click", () => {
+    const range = button.dataset.range;
+    const today = new Date();
+
+    if (range === "lastweek") {
+      const day = today.getDay(); // 0=日,1=月...6=土
+      const diffToMonday = day === 0 ? 6 : day - 1;
+      const thisMonday = new Date(today);
+      thisMonday.setDate(today.getDate() - diffToMonday);
+      const lastMonday = new Date(thisMonday);
+      lastMonday.setDate(thisMonday.getDate() - 7);
+      const lastSunday = new Date(thisMonday);
+      lastSunday.setDate(thisMonday.getDate() - 1);
+      startInput.value = toDateStr(lastMonday);
+      endInput.value = toDateStr(lastSunday);
+    } else {
+      const days = parseInt(range, 10);
+      const from = new Date(today);
+      from.setDate(today.getDate() - (days - 1));
+      startInput.value = toDateStr(from);
+      endInput.value = toDateStr(today);
+    }
+  });
+});
+
+function setStatus(text, kind) {
+  statusEl.textContent = text;
+  statusEl.className = "status" + (kind ? " " + kind : "");
+}
+
+function appendLog(line) {
+  logEl.style.display = "block";
+  logEl.textContent += line + "\n";
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+btn.addEventListener("click", async () => {
+  const start = startInput.value;
+  const end = endInput.value;
+
+  if (!start || !end) {
+    setStatus("開始日と終了日を選んでください", "warn");
+    return;
+  }
+  if (start > end) {
+    setStatus("開始日は終了日より前にしてください", "warn");
+    return;
+  }
+
+  btn.disabled = true;
+  logEl.textContent = "";
+  logEl.style.display = "none";
+  setStatus("データを取得しています…");
+
+  const startD = new Date(start + "T00:00:00");
+  const endD = new Date(end + "T00:00:00");
+  const dates = [];
+  for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+    dates.push(toDateStr(d));
+  }
+
+  let header = null;
+  const rows = [];
+  let foundCount = 0;
+
+  for (const dateStr of dates) {
+    const compact = toCompact(dateStr);
+    const url = `${REPO_RAW_BASE}/dam_data_${DAM_CODE}_${compact}.csv`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        appendLog(`  スキップ: ${dateStr}（データなし）`);
+        continue;
+      }
+      const text = await res.text();
+      const lines = text.trim().split("\n");
+      if (lines.length === 0) continue;
+
+      if (header === null) {
+        header = lines[0];
+        rows.push(...lines.slice(1));
+      } else {
+        rows.push(...lines.slice(1));
+      }
+      foundCount += 1;
+      appendLog(`  取得: ${dateStr}（${lines.length - 1}行）`);
+    } catch (err) {
+      appendLog(`  エラー: ${dateStr}（${err.message}）`);
+    }
+  }
+
+  btn.disabled = false;
+
+  if (foundCount === 0 || header === null) {
+    setStatus("この期間のデータが見つかりませんでした", "warn");
+    return;
+  }
+
+  const csvContent = [header, ...rows].join("\n");
+  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `dam_data_${DAM_CODE}_${toCompact(start)}-${toCompact(end)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  setStatus(`完了: ${foundCount}日分のデータをダウンロードしました`, "ok");
+});
+</script>
+
+</body>
+</html>
