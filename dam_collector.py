@@ -147,6 +147,12 @@ def main() -> None:
     target_df = filter_target_dam(df)
     print(f"ダムコード {TARGET_DAM_CODE} のデータ: {len(target_df)}行")
 
+    # サイト側の実際の更新間隔(10分刻み)とGitHub Actionsの起動遅延により、
+    # 「時刻」列がXX:10やXX:20になることがある。1時間に1回のスナップショット
+    # として扱いたいため、分の部分を強制的に00に書き換える。
+    # (「取得日時」列は実際に取得した時刻のまま、正直な値を残す)
+    target_df["時刻"] = target_df["時刻"].astype(str).str.split(":").str[0] + ":00"
+
     # 「取得日時」はここで1回だけ付与し、日次ファイル・全期間ファイルの
     # 両方に同じ値を使う
     target_df = target_df.copy()
