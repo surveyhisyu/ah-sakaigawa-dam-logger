@@ -1,8 +1,9 @@
 name: 境川ダムデータ自動収集
 
 on:
-  schedule:
-    - cron: "3 * * * *"
+  # GitHub純正のscheduleは、混雑時に遅延・スキップされることが多く
+  # 信頼性が低いため使用しない。外部のcronサービス(cron-job.org等)から
+  # 毎時このworkflow_dispatchをAPI経由で呼び出す運用にする。
   workflow_dispatch:
 
 permissions:
