@@ -153,10 +153,15 @@ def main() -> None:
     # (「取得日時」列は実際に取得した時刻のまま、正直な値を残す)
     target_df["時刻"] = target_df["時刻"].astype(str).str.split(":").str[0] + ":00"
 
+    # 「取得日時」は実際にスクリプトが動いた時刻ではなく、
+    # 常に「その時台のXX:08」という表記に強制する
+    # (実際の実行が多少前後しても、記録上は毎回同じ分で揃えるため)
+    recorded_time = now_jst.replace(minute=TARGET_MINUTE, second=0, microsecond=0)
+
     # 「取得日時」はここで1回だけ付与し、日次ファイル・全期間ファイルの
     # 両方に同じ値を使う
     target_df = target_df.copy()
-    target_df.insert(0, "取得日時", now_jst.strftime("%Y-%m-%d %H:%M:%S"))
+    target_df.insert(0, "取得日時", recorded_time.strftime("%Y-%m-%d %H:%M:%S"))
 
     append_to_daily_csv(target_df)
     append_to_all_csv(target_df)
